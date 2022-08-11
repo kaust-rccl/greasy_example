@@ -1,0 +1,55 @@
+#!/bin/bash 
+#SBATCH --partition=debug
+#SBATCH --job-name=MyJob
+#SBATCH --output=out_folder/greasy-%j.out
+#SBATCH --error=err_folder/greasy-%j.err
+#SBATCH --nodes=1
+#SBATCH --ntasks=8
+#SBATCH --ntasks-per-core=1
+#SBATCH --time=00:05:00
+
+###############################################################################
+#    load your desired module                                               #
+###############################################################################
+module load greasy 
+
+mkdir -p out_folder err_folder log_folder inputs
+
+###############################################################################
+#   we can have a small peak view to what resource is used                    #
+###############################################################################
+
+GREASY_NWORKERS=$SLURM_NNODES
+GREASY_NODELIST=`scontrol show hostname | awk '{ printf("%s%s",a,$NF); a=","}' `
+
+##################################################
+# Here goes the path to the place where the logs #
+# will be written.                               #
+# By default, if not set, it will use:           #
+# ./greasy.log                                   #
+# or                                             #
+# ./greasy-<jobid>.log if inside slurm job       #
+##################################################
+
+export GREASY_LOGFILE=log_folder/greasy_${SLURM_JOB_ID}.log
+
+
+echo "Running GREASY on $GREASY_NWORKERS workers  $GREASY_NODELIST"
+
+###############################################################################
+#   Run your code                                                            #
+###############################################################################
+echo "Running hostname"
+for n in  {1..8} ; do echo "hostname"; done > inputs/hostname.txt
+greasy inputs/hostname.txt
+
+
+echo "Running another kind of job"
+for n in  {1..8} ; do echo "/bin/sleep ${n}"; done > inputs/sleep.txt
+greasy inputs/sleep.txt
+
+echo "Running a job with scripts"
+for n in  {1..8} ; do echo "python src/my_script.py ${n}"; done > inputs/my_python_job.txt
+greasy inputs/my_python_job.txt
+
+
